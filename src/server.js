@@ -24,6 +24,14 @@ app.use('/api/content', contentRoutes);
 const apiKeyRoutes = require('./routes/apiKeys');
 app.use('/api/keys', apiKeyRoutes);
 
+// Subscription Routes
+const subscriptionRoutes = require('./routes/subscription');
+app.use('/api/subscription', subscriptionRoutes);
+
+// Webhook Routes
+const webhookRoutes = require('./routes/webhook');
+app.use('/webhook', webhookRoutes);
+
 // Database connection
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('Connected to MongoDB'))

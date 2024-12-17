@@ -1,6 +1,34 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
+// Subscription Schema
+const subscriptionSchema = new mongoose.Schema({
+  stripeCustomerId: { type: String },
+  stripePriceId: { type: String },
+  stripeSubscriptionId: { type: String },
+  status: {
+    type: String,
+    enum: ['active', 'canceled', 'past_due', 'trialing'],
+    default: 'trialing'
+  },
+  currentPeriodEnd: Date,
+  tier: {
+    type: String,
+    enum: ['free', 'basic', 'pro', 'agency'],
+    default: 'free'
+  },
+  features: {
+    monthlyCredits: { type: Number, default: 0 },
+    maxWebsites: { type: Number, default: 0 },
+    maxTeamMembers: { type: Number, default: 1 },
+    internalLinking: { type: Boolean, default: false },
+    advancedSeo: { type: Boolean, default: false },
+    customBranding: { type: Boolean, default: false },
+    apiAccess: { type: Boolean, default: false }
+  }
+});
+
+// User Schema
 const userSchema = new mongoose.Schema({
   email: {
     type: String,
@@ -36,22 +64,22 @@ const userSchema = new mongoose.Schema({
     openai: {
       key: { type: String, select: false },
       enabled: { type: Boolean, default: false },
-      selectedModels: [{ type: String }]  // ['gpt-4', 'gpt-3.5-turbo']
+      selectedModels: [{ type: String }]
     },
     anthropic: {
       key: { type: String, select: false },
       enabled: { type: Boolean, default: false },
-      selectedModels: [{ type: String }]  // ['claude-3-opus', 'claude-3-sonnet']
+      selectedModels: [{ type: String }]
     },
     openrouter: {
       key: { type: String, select: false },
       enabled: { type: Boolean, default: false },
-      selectedModels: [{ type: String }]  // ['mistral-large', 'mixtral-8x7b']
+      selectedModels: [{ type: String }]
     },
     perplexity: {
       key: { type: String, select: false },
       enabled: { type: Boolean, default: false },
-      selectedModels: [{ type: String }]  // ['pplx-7b', 'pplx-70b']
+      selectedModels: [{ type: String }]
     }
   },
   apiSettings: {
@@ -62,7 +90,18 @@ const userSchema = new mongoose.Schema({
       default: 'openai'
     },
     defaultModel: { type: String }
-  }
+  },
+  subscription: {
+    type: subscriptionSchema,
+    default: () => ({})
+  },
+  websites: [{
+    url: String,
+    name: String,
+    sitemap: String,
+    competitors: [String],
+    lastScanned: Date
+  }]
 }, {
   timestamps: true
 });

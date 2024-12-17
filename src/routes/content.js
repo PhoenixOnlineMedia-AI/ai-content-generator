@@ -4,6 +4,43 @@ const auth = require('../middleware/auth');
 const Content = require('../models/Content');
 const aiService = require('../services/aiService');
 
+/**
+ * @swagger
+ * /api/content/generate:
+ *   post:
+ *     summary: Generate content using AI
+ *     tags: [Content]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - prompt
+ *               - type
+ *             properties:
+ *               prompt:
+ *                 type: string
+ *                 description: Content generation prompt
+ *               type:
+ *                 type: string
+ *                 enum: [blog, social, email]
+ *               keywords:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *     responses:
+ *       200:
+ *         description: Content generated successfully
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Insufficient credits
+ */
+
 // Generate content using AI
 router.post('/generate', auth, async (req, res) => {
   try {

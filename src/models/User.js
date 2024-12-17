@@ -82,6 +82,26 @@ const userSchema = new mongoose.Schema({
       selectedModels: [{ type: String }]
     }
   },
+  apiKeys: {
+    serpApi: {
+      key: { type: String, select: false },
+      enabled: { type: Boolean, default: false },
+      usage: { type: Number, default: 0 }
+    },
+    scrapingBee: {
+      key: { type: String, select: false },
+      enabled: { type: Boolean, default: false },
+      usage: { type: Number, default: 0 }
+    }
+  },
+  serpCredits: {
+    type: Number,
+    default: 0
+  },
+  tierLimits: {
+    serpQueries: { type: Number, default: 0 },
+    competitorAnalysis: { type: Number, default: 0 }
+  },
   apiSettings: {
     useOwnKeys: { type: Boolean, default: false },
     defaultProvider: { 

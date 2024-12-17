@@ -33,7 +33,25 @@ const contentSchema = new mongoose.Schema({
     type: String,
     enum: ['draft', 'published', 'archived'],
     default: 'draft'
-  }
+  },
+  lastEnhanced: {
+    type: Date
+  },
+  metrics: {
+    wordCount: Number,
+    readingTime: Number,
+    readabilityScore: Number,
+    keywordDensity: Map,
+    suggestedHashtags: [String]
+  },
+  revisions: [{
+    content: String,
+    enhancementType: String,
+    timestamp: {
+      type: Date,
+      default: Date.now
+    }
+  }]
 }, {
   timestamps: true
 });

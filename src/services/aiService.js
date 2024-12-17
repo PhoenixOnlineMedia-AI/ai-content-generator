@@ -365,6 +365,181 @@ class AIService {
       throw new Error('Failed to generate hashtags');
     }
   }  
+  async analyzeReadability(content) {
+    const textstat = require('text-readability');
+    
+    const readabilityScores = {
+      fleschKincaid: textstat.fleschKincaidGrade(content),
+      flesch: textstat.fleschReadingEase(content),
+      smog: textstat.smogIndex(content),
+      colemanLiau: textstat.colemanLiauIndex(content),
+      automatedReadability: textstat.automatedReadabilityIndex(content)
+    };
+    
+    return readabilityScores;
+  }
+
+    async extractTopics(content) {
+      try {
+        const natural = require('natural');
+        const stopword = require('stopword');
+        
+        const tokenizer = new natural.WordTokenizer();
+        const tokens = tokenizer.tokenize(content.toLowerCase());
+        const filteredTokens = stopword.removeStopwords(tokens);
+        
+        const tfidf = new natural.TfIdf();
+        tfidf.addDocument(filteredTokens);
+        
+        const topics = tfidf.listTerms(0)
+          .slice(0, 5)
+          .map(term => ({
+            topic: term.term,
+            weight: term.tfidf
+          }));
+        
+        return topics;
+      } catch (error) {
+        console.error('Topic Extraction Error:', error);
+        throw new Error('Failed to extract topics');
+      }
+    }
+  
+    async analyzeSentiment(content) {
+      try {
+        const Sentiment = require('sentiment');
+        const sentiment = new Sentiment();
+        
+        const result = sentiment.analyze(content);
+        
+        return {
+          score: result.score,
+          comparative: result.comparative,
+          positive: result.positive,
+          negative: result.negative,
+          analysis: result.score > 0 ? 'Positive' : result.score < 0 ? 'Negative' : 'Neutral'
+        };
+      } catch (error) {
+        console.error('Sentiment Analysis Error:', error);
+        throw new Error('Failed to analyze sentiment');
+      }
+    }
+  
+    async findExternalLinks(content, excludeDomains = []) {
+      try {
+        const response = await this.perplexity.post('/chat/completions', {
+          model: "pplx-7b-online",
+          messages: [{
+            role: "system",
+            content: `Find relevant, authoritative external links for the following content. 
+                     Exclude these domains: ${excludeDomains.join(', ')}.
+                     Focus on reputable sources like educational institutions, government sites, and well-known publications.`
+          }, {
+            role: "user",
+            content: content
+          }]
+        });
+        
+        const links = response.data.choices[0].message.content
+          .split('\n')
+          .filter(Boolean)
+          .map(link => link.trim())
+          .filter(link => !excludeDomains.some(domain => link.includes(domain)));
+  
+        return links;
+      } catch (error) {
+        console.error('External Link Finding Error:', error);
+        throw new Error('Failed to find external links');
+      }
+    }
+  
+    async sanitizeContent(html) {
+      try {
+        const sanitizeHtml = require('sanitize-html');
+        return sanitizeHtml(html, {
+          allowedTags: sanitizeHtml.defaults.allowedTags.concat([
+            'img', 'h1', 'h2', 'h3', 'table', 'thead', 'tbody', 'tr', 'th', 'td'
+          ]),
+          allowedAttributes: {
+            '*': ['href', 'src', 'alt', 'title', 'class', 'id'],
+            'table': ['border', 'cellpadding', 'cellspacing'],
+            'th': ['scope', 'colspan', 'rowspan'],
+            'td': ['colspan', 'rowspan']
+          }
+        });
+      } catch (error) {
+        console.error('HTML Sanitization Error:', error);
+        throw new Error('Failed to sanitize HTML content');
+      }
+    }  
+    async analyzeSEO(content) {
+      try {
+        const response = await this.openai.chat.completions.create({
+          model: "gpt-4",
+          messages: [{
+            role: "system",
+            content: `Analyze the SEO aspects of the content and provide detailed recommendations. 
+                     Include title tag, meta description, heading structure, keyword usage, 
+                     content length, and internal linking opportunities.`
+          }, {
+            role: "user",
+            content: content
+          }],
+          temperature: 0.7
+        });
+    
+        return response.choices[0].message.content;
+      } catch (error) {
+        console.error('SEO Analysis Error:', error);
+        throw new Error('Failed to analyze SEO');
+      }
+    }
+    
+    async enhanceSEO(content, options) {
+      try {
+        const { keywords, targetLength, user } = options;
+        
+        const response = await this.openai.chat.completions.create({
+          model: "gpt-4",
+          messages: [{
+            role: "system",
+            content: `Enhance the content for SEO while maintaining natural readability. 
+                     Target length: ${targetLength || 'original'} words.
+                     Focus keywords: ${keywords.join(', ')}.
+                     Include semantic variations of keywords.
+                     Add relevant headings and subheadings.
+                     Ensure proper keyword density.
+                     Add transition sentences between paragraphs.`
+          }, {
+            role: "user",
+            content: content
+          }],
+          temperature: 0.7
+        });
+    
+        return response.choices[0].message.content;
+      } catch (error) {
+        console.error('SEO Enhancement Error:', error);
+        throw new Error('Failed to enhance SEO');
+      }
+    }
+    
+    async analyzeContentStructure(content) {
+      try {
+        // Analyze headings, paragraphs, lists, etc.
+        const structure = {
+          headings: this._extractHeadings(content),
+          paragraphCount: this._countParagraphs(content),
+          listItems: this._extractLists(content),
+          contentBlocks: this._analyzeContentBlocks(content)
+        };
+    
+        return structure;
+      } catch (error) {
+        console.error('Content Structure Analysis Error:', error);
+        throw new Error('Failed to analyze content structure');
+      }
+    }    
 }
 
 module.exports = new AIService();

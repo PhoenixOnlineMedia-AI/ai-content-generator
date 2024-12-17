@@ -20,6 +20,10 @@ app.use('/api/auth', authRoutes);
 const contentRoutes = require('./routes/content');
 app.use('/api/content', contentRoutes);
 
+// Content Enhancement Routes
+const contentEnhancementRoutes = require('./routes/contentEnhancement');
+app.use('/api/enhance', contentEnhancementRoutes);
+
 // API Key Routes
 const apiKeyRoutes = require('./routes/apiKeys');
 app.use('/api/keys', apiKeyRoutes);

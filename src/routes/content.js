@@ -162,4 +162,108 @@ router.get('/:id/export/:format', auth, async (req, res) => {
   }
 });
 
+// Content Enhancement Routes
+router.post('/:id/enhance', auth, async (req, res) => {
+    try {
+      const { action, options } = req.body;
+      const content = await Content.findOne({ _id: req.params.id, user: req.user._id });
+      
+      if (!content) {
+        return res.status(404).json({ message: 'Content not found' });
+      }
+  
+      // Check user credits
+      if (req.user.credits <= 0) {
+        return res.status(403).json({ message: 'Insufficient credits' });
+      }
+  
+      let enhancedContent;
+      switch (action) {
+        case 'rephrase':
+          enhancedContent = await aiService.enhanceContent(content.content, {
+            type: 'rephrase',
+            ...options
+          });
+          break;
+        case 'simplify':
+          enhancedContent = await aiService.enhanceContent(content.content, {
+            type: 'simplify',
+            ...options
+          });
+          break;
+        case 'expand':
+          enhancedContent = await aiService.enhanceContent(content.content, {
+            type: 'expand',
+            ...options
+          });
+          break;
+        case 'tone':
+          enhancedContent = await aiService.enhanceContent(content.content, {
+            type: 'tone',
+            tone: options.tone
+          });
+          break;
+        case 'grammar':
+          enhancedContent = await aiService.enhanceContent(content.content, {
+            type: 'grammar'
+          });
+          break;
+        case 'enhance':
+          enhancedContent = await aiService.enhanceContent(content.content, {
+            type: 'enhance',
+            ...options
+          });
+          break;
+        default:
+          return res.status(400).json({ message: 'Invalid enhancement action' });
+      }
+  
+      // Save the enhanced version
+      content.content = enhancedContent;
+      content.lastEnhanced = new Date();
+      await content.save();
+  
+      // Deduct credits
+      req.user.credits -= 1;
+      await req.user.save();
+  
+      res.json({ 
+        message: 'Content enhanced successfully',
+        content: enhancedContent
+      });
+    } catch (error) {
+      res.status(500).json({ 
+        message: 'Error enhancing content', 
+        error: error.message 
+      });
+    }
+  });
+  
+  // Get content metrics
+  router.get('/:id/metrics', auth, async (req, res) => {
+    try {
+      const content = await Content.findOne({ _id: req.params.id, user: req.user._id });
+      
+      if (!content) {
+        return res.status(404).json({ message: 'Content not found' });
+      }
+  
+      const metrics = {
+        wordCount: content.content.split(/\s+/).length,
+        readingTime: Math.ceil(content.content.split(/\s+/).length / 200), // Assuming 200 words per minute
+        lastUpdated: content.updatedAt,
+        keywordDensity: await aiService.analyzeKeywordDensity(content.content),
+        readabilityScore: await aiService.analyzeReadability(content.content),
+        suggestedHashtags: await aiService.generateHashtags(content.content)
+      };
+  
+      res.json(metrics);
+    } catch (error) {
+      res.status(500).json({ 
+        message: 'Error calculating metrics', 
+        error: error.message 
+      });
+    }
+  });  
+
 module.exports = router;
